@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visor de Visitas - Ortofoto y Puntos de Interés</title>
+
+  <!-- Tipografía (Montserrat + Open Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- CesiumJS desde CDN -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Cesium.js"></script>
+  <link
+    href="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Widgets/widgets.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* =====================================================================
+       [INTERVENIR AQUÍ] Paleta de colores y tipografía
+       ===================================================================== */
+    :root {
+      --color-primario: #B6812F;     /* Acento dorado / cobre */
+      --color-oscuro: #24415D;       /* Paneles y controles */
+      --color-oscuro-profundo: #182838; /* Fondo profundo */
+      --color-apoyo: #3389A3;        /* Detalles secundarios */
+      --color-texto: #FFFFFF;
+      --color-texto-suave: #D7E2EC;
+      --font-titulo: "Montserrat", sans-serif;
+      --font-cuerpo: "Open Sans", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body, #cesiumContainer {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--font-cuerpo);
+      background-color: var(--color-oscuro-profundo);
+      color: var(--color-texto);
+    }
+
+    .topbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .panel {
+      pointer-events: auto;
+      background: rgba(24, 40, 56, 0.90);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .header-box {
+      padding: 10px 16px;
+      border-left: 4px solid var(--color-primario);
+    }
+
+    .header-box h1 {
+      font-family: var(--font-titulo);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .header-box p {
+      font-size: 0.78rem;
+      color: var(--color-texto-suave);
+    }
+
+    .controls-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+    }
+
+    select, button {
+      font-family: var(--font-cuerpo);
+      font-size: 0.84rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    select {
+      background-color: var(--color-oscuro);
+      color: var(--color-texto);
+      padding: 7px 10px;
+      max-width: 260px;
+    }
+
+    button {
+      background-color: var(--color-oscuro);
+      color: var(--color-texto);
+      padding: 7px 11px;
+      font-weight: 600;
+    }
+
+    button:hover {
+      border-color: var(--color-primario);
+    }
+
+    button.active {
+      background-color: var(--color-primario);
+      color: #FFFFFF;
+      border-color: var(--color-primario);
+    }
+
+    .info-card {
+      position: absolute;
+      top: 74px;
+      right: 12px;
+      width: 310px;
+      max-width: calc(100% - 24px);
+      z-index: 10;
+      padding: 14px 16px;
+      display: none;
+      border-top: 3px solid var(--color-primario);
+    }
+
+    .info-card.visible {
+      display: block;
+    }
+
+    .info-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .info-card h2 {
+      font-family: var(--font-titulo);
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-texto-suave);
+      font-size: 1.1rem;
+      padding: 2px 6px;
+    }
+
+    .close-btn:hover {
+      color: #FFFFFF;
+    }
+
+    .info-card p {
+      font-size: 0.84rem;
+      line-height: 1.45;
+      color: var(--color-texto-suave);
+      margin-bottom: 10px;
+    }
+
+    .coords-line {
+      font-size: 0.74rem;
+      color: #A7B8C9;
+      font-family: monospace;
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+      }
+      .header-box {
+        width: 100%;
+        padding: 8px 12px;
+      }
+      .controls-box {
+        width: 100%;
+        justify-content: space-between;
+      }
+      select {
+        flex: 1;
+        max-width: none;
+      }
+      .info-card {
+        top: auto;
+        bottom: 14px;
+        right: 8px;
+        left: 8px;
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+
+  <div class="topbar">
+    <div class="panel header-box">
+      <!-- [INTERVENIR AQUÍ] Título y subtítulo del visor -->
+      <h1>Recorrido de Visitas</h1>
+      <p>Ortofoto de sitio y puntos de interés</p>
+    </div>
+
+    <div class="panel controls-box">
+      <select id="poiSelect" aria-label="Ir a un punto">
+        <option value="">Ir a un lugar...</option>
+      </select>
+      <button id="toggleLabelsBtn" class="active" title="Mostrar u ocultar etiquetas">
+        Etiquetas
+      </button>
+      <button id="resetViewBtn" title="Vista general">
+        Inicio
+      </button>
+    </div>
+  </div>
+
+  <div id="infoCard" class="panel info-card">
+    <div class="info-card-header">
+      <h2 id="cardTitle">Nombre del lugar</h2>
+      <button id="closeCardBtn" class="close-btn" aria-label="Cerrar">✕</button>
+    </div>
+    <p id="cardDescription">Descripción del lugar.</p>
+    <div id="cardCoords" class="coords-line"></div>
+  </div>
+
+  <script>
+    /* =====================================================================
+       [INTERVENIR AQUÍ] Credenciales y Asset ID de Cesium ion
+       ===================================================================== */
+    const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImFveUJVMGZrSnJLaDY4YnAiLCJqdGkiOiI3YTAzYzNiNi04M2Y0LTQzNTYtYTUwZS0xZjFlYjRiYTFiMDEiLCJpZCI6NDc3MzE0LCJzdWIiOiJqY2FzdHJvaiIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJUb2tlbiBCYWxzYXMgV0dTODQiLCJpYXQiOjE3OTQxNDg3OTR9.LmMadfxwRLLqVzBvfdqgrtytkdqtiiIawye9J63QEwI";
+    const ORTHOPHOTO_ASSET_ID = 6134167; // Reemplaza 0 por el ID numérico de tu ortofoto en Cesium ion
+    const USE_WORLD_TERRAIN = true;
+
+    /* =====================================================================
+       [INTERVENIR AQUÍ] Color único de marcadores en el mapa
+       ===================================================================== */
+    const MARKER_COLOR = Cesium.Color.fromCssColorString("#B6812F");
+
+    /* =====================================================================
+       [INTERVENIR AQUÍ] Lista completa de puntos de interés (POIs)
+       Puedes reacomodar el orden o editar "name" y "description".
+       Coordenadas en grados decimales WGS84: { name, lat, lon, description }
+       ===================================================================== */
+    const POIS = [
+      { name: "Carrizalillo", lat: 17.8516194, lon: -99.7119583, description: "" },
+      { name: "Area para PAD 3", lat: 17.8582611, lon: -99.7006750, description: "" },
+      { name: "Rebombeo de PADS", lat: 17.8575222, lon: -99.6970806, description: "" },
+      { name: "Antiguo campamento de contratistas", lat: 17.8529944, lon: -99.6971139, description: "" },
+      { name: "Aglomerador", lat: 17.8636444, lon: -99.6942694, description: "" },
+      { name: "PAD 1", lat: 17.8643861, lon: -99.6915083, description: "" },
+      { name: "PAD 2", lat: 17.8644556, lon: -99.7020500, description: "" },
+      { name: "Canal Oeste", lat: 17.8642444, lon: -99.7057056, description: "" },
+      { name: "Relleno Sanitario Carrizalillo", lat: 17.8679667, lon: -99.7093278, description: "" },
+      { name: "Pileta de contingencias 2", lat: 17.8707167, lon: -99.7021417, description: "" },
+      { name: "Pileta de solucion rica PAD 2", lat: 17.8688306, lon: -99.7006917, description: "" },
+      { name: "Planta procesos", lat: 17.8702583, lon: -99.6995000, description: "" },
+      { name: "Cañada 23 (Sur)", lat: 17.8777444, lon: -99.7035583, description: "" },
+      { name: "Pileta de contingencias 1", lat: 17.8724417, lon: -99.6992194, description: "" },
+      { name: "Pileta de recirculacion", lat: 17.8700444, lon: -99.6977750, description: "" },
+      { name: "Pileta Norte PAD 1", lat: 17.8702667, lon: -99.6966722, description: "" },
+      { name: "Pileta Sur PAD 1", lat: 17.8696444, lon: -99.6970167, description: "" },
+      { name: "Oficinas de supervision de ...", lat: 17.8752250, lon: -99.6915333, description: "" },
+      { name: "Camino perimetral", lat: 17.8741472, lon: -99.6886583, description: "" },
+      { name: "Antiguo aglomerador (Ahora ...)", lat: 17.8765722, lon: -99.6910278, description: "" },
+      { name: "Silo de cal Bermejal", lat: 17.8640694, lon: -99.6841722, description: "" },
+      { name: "Patio de arranque Tajo Bermejal", lat: 17.8627028, lon: -99.6829583, description: "" },
+      { name: "Mirador Tajo Bermejal", lat: 17.8594083, lon: -99.6814222, description: "" },
+      { name: "Tepetatera Sur Bermejal", lat: 17.8514639, lon: -99.6825222, description: "" },
+      { name: "Polvorin", lat: 17.8452139, lon: -99.6791111, description: "" },
+      { name: "Tajo Bermejal", lat: 17.8572139, lon: -99.6767944, description: "" },
+      { name: "Bocamina Bermejal UG", lat: 17.8634889, lon: -99.6770972, description: "" },
+      { name: "Tepetatera Norte Guadalupe", lat: 17.8661639, lon: -99.6655611, description: "" },
+      { name: "Tajo Guadalupe", lat: 17.8535778, lon: -99.6690444, description: "" },
+      { name: "Obra de Contencion Cañada ...", lat: 17.8539222, lon: -99.6621250, description: "" },
+      { name: "Cañada Guadalupe", lat: 17.8510611, lon: -99.6479000, description: "" },
+      { name: "Xochipala", lat: 17.8123333, lon: -99.6409667, description: "" },
+      { name: "Cañada El Papayo", lat: 17.8668083, lon: -99.6590278, description: "" },
+      { name: "Cerrro Cuatepetl", lat: 17.8718194, lon: -99.6732611, description: "" },
+      { name: "Oficinas Ancillares", lat: 17.8703528, lon: -99.6809944, description: "" },
+      { name: "Taller Mtto OP y Almacen", lat: 17.8693778, lon: -99.6817222, description: "" },
+      { name: "Bodega de Nucleos OP", lat: 17.8681694, lon: -99.6804139, description: "" },
+      { name: "Campamento IPAE", lat: 17.8667167, lon: -99.6827361, description: "" },
+      { name: "Concretera BUG", lat: 17.8669944, lon: -99.6844472, description: "" },
+      { name: "Tajo La Agüita", lat: 17.8902111, lon: -99.6805417, description: "" },
+      { name: "Tajo Filos Fase 1", lat: 17.8879472, lon: -99.6753694, description: "" },
+      { name: "Tajo Filos Zona 70", lat: 17.8833333, lon: -99.6861472, description: "" },
+      { name: "Tepetatera Sur Filos", lat: 17.8811694, lon: -99.6894250, description: "" },
+      { name: "Tepetatera Oriente Filos (re...)", lat: 17.8843694, lon: -99.6695917, description: "" },
+      { name: "Aeropista", lat: 17.8918611, lon: -99.6694528, description: "" },
+      { name: "Subestacion Principal", lat: 17.8973889, lon: -99.6693778, description: "" },
+      { name: "Tepetatera Norte Filos", lat: 17.8971861, lon: -99.6771333, description: "" },
+      { name: "Cañada La Agüita", lat: 17.9003889, lon: -99.6799056, description: "" },
+      { name: "Casa de Piedra", lat: 17.8958500, lon: -99.6814750, description: "" },
+      { name: "Tajo Nukay", lat: 17.8970611, lon: -99.6954583, description: "" },
+      { name: "Bodega de Nucleos UG", lat: 17.8980722, lon: -99.6937278, description: "" },
+      { name: "Taller y Bullpen UG", lat: 17.8978639, lon: -99.6915750, description: "" },
+      { name: "Concretera FUG", lat: 17.8981944, lon: -99.6881389, description: "" },
+      { name: "Pueble Conchita", lat: 17.8955028, lon: -99.6914806, description: "" },
+      { name: "Bocamina Conchita", lat: 17.8942333, lon: -99.6930639, description: "" },
+      { name: "Cañada Nukay", lat: 17.8938444, lon: -99.7011639, description: "" },
+      { name: "Bocamina Diegos", lat: 17.8907750, lon: -99.7045278, description: "" },
+      { name: "Mazapa", lat: 17.9103361, lon: -99.6985583, description: "" },
+      { name: "Cañada Mazapa (Sur)", lat: 17.9131417, lon: -99.7028500, description: "" },
+      { name: "Desemboque de Cañada Mazapa", lat: 17.9615667, lon: -99.6904111, description: "" },
+      { name: "Cañada Mazapa (Norte)", lat: 17.9441194, lon: -99.6981472, description: "" },
+      { name: "Relleno Sanitario Mezcala", lat: 17.9295417, lon: -99.6247056, description: "" },
+      { name: "Colonia Los Filos", lat: 17.9264750, lon: -99.6254417, description: "" },
+      { name: "Mezcala", lat: 17.9306667, lon: -99.6067889, description: "" },
+      { name: "Bombeo 1", lat: 17.9285139, lon: -99.6209944, description: "" },
+      { name: "Rebombeo 2", lat: 17.9279222, lon: -99.6231917, description: "" },
+      { name: "Rebombeo 3", lat: 17.9010306, lon: -99.6486667, description: "" },
+      { name: "Rebombeo 4", lat: 17.8919361, lon: -99.6630194, description: "" },
+      { name: "Cañada 23 (Norte)", lat: 17.8933250, lon: -99.7057528, description: "" },
+      { name: "Bocamina San Andres", lat: 17.8871250, lon: -99.6980139, description: "" },
+      { name: "Vaciadero San Andres", lat: 17.8860667, lon: -99.6997750, description: "" },
+      { name: "Trituracion", lat: 17.8785250, lon: -99.6874000, description: "" },
+      { name: "Antiguo Control Vehicular", lat: 17.8781944, lon: -99.6843056, description: "" },
+      { name: "Patio de arranque Tajo Filos", lat: 17.8757667, lon: -99.6820889, description: "" },
+      { name: "Canal Interior", lat: 17.8764611, lon: -99.6950194, description: "" },
+      { name: "Paraje Los Cocos", lat: 17.8480917, lon: -99.7026361, description: "" }
+    ];
+
+    // =====================================================================
+    // Inicialización del visor CesiumJS
+    // =====================================================================
+    Cesium.Ion.defaultAccessToken = CESIUM_ION_TOKEN;
+
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      animation: false,
+      timeline: false,
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      fullscreenButton: false,
+      infoBox: false,
+      selectionIndicator: false
+    });
+
+    const entitiesByIndex = [];
+    let labelsVisible = true;
+
+    async function initViewer() {
+      if (USE_WORLD_TERRAIN && CESIUM_ION_TOKEN !== "PEGA_AQUI_TU_CESIUM_ION_TOKEN") {
+        try {
+          viewer.terrainProvider = await Cesium.createWorldTerrainAsync();
+        } catch (err) {
+          console.warn("No se pudo cargar relieve mundial, se usa elipsoide:", err);
+        }
+      }
+
+      if (ORTHOPHOTO_ASSET_ID > 0 && CESIUM_ION_TOKEN !== "PEGA_AQUI_TU_CESIUM_ION_TOKEN") {
+        try {
+          const orthoLayer = await Cesium.ImageryLayer.fromProviderAsync(
+            Cesium.IonImageryProvider.fromAssetId(ORTHOPHOTO_ASSET_ID)
+          );
+          viewer.imageryLayers.add(orthoLayer);
+        } catch (err) {
+          console.error("Error al cargar la ortofoto desde Cesium ion:", err);
+        }
+      }
+
+      createAllPoiEntities();
+      populatePoiDropdown();
+      bindEvents();
+      flyToInitialOverview();
+    }
+
+    function createAllPoiEntities() {
+      POIS.forEach((poi, idx) => {
+        const entity = viewer.entities.add({
+          name: poi.name,
+          position: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, 0),
+          point: {
+            pixelSize: 11,
+            color: MARKER_COLOR,
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 2,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          },
+          label: {
+            text: poi.name,
+            font: "600 13px 'Open Sans', sans-serif",
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.fromCssColorString("#182838"),
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -14),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            scaleByDistance: new Cesium.NearFarScalar(1500, 1.0, 18000, 0.35),
+            translucencyByDistance: new Cesium.NearFarScalar(1500, 1.0, 25000, 0.25),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          },
+          properties: {
+            poiIndex: idx
+          }
+        });
+
+        entitiesByIndex.push(entity);
+      });
+    }
+
+    const infoCard = document.getElementById("infoCard");
+    const cardTitle = document.getElementById("cardTitle");
+    const cardDescription = document.getElementById("cardDescription");
+    const cardCoords = document.getElementById("cardCoords");
+    const poiSelect = document.getElementById("poiSelect");
+
+    function populatePoiDropdown() {
+      poiSelect.innerHTML = '<option value="">Ir a un lugar...</option>';
+      POIS.forEach((poi, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = poi.name;
+        poiSelect.appendChild(opt);
+      });
+    }
+
+    function flyToPoi(idx) {
+      const poi = POIS[idx];
+      if (!poi) return;
+
+      cardTitle.textContent = poi.name;
+      cardDescription.textContent = poi.description || "Punto de interés en sitio.";
+      cardCoords.textContent = `Lat: ${poi.lat.toFixed(6)} | Lon: ${poi.lon.toFixed(6)}`;
+      infoCard.classList.add("visible");
+      poiSelect.value = String(idx);
+
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, 1200),
+        orientation: {
+          heading: Cesium.Math.toRadians(0),
+          pitch: Cesium.Math.toRadians(-45),
+          roll: 0
+        },
+        duration: 1.2
+      });
+    }
+
+    // [INTERVENIR AQUÍ] Vista inicial general del recorrido
+    function flyToInitialOverview() {
+      infoCard.classList.remove("visible");
+      poiSelect.value = "";
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-99.682, 17.885, 14500),
+        orientation: {
+          heading: Cesium.Math.toRadians(0),
+          pitch: Cesium.Math.toRadians(-65),
+          roll: 0
+        },
+        duration: 1.2
+      });
+    }
+
+    function bindEvents() {
+      poiSelect.addEventListener("change", (e) => {
+        if (e.target.value !== "") {
+          flyToPoi(Number(e.target.value));
+        }
+      });
+
+      document.getElementById("closeCardBtn").addEventListener("click", () => {
+        infoCard.classList.remove("visible");
+      });
+
+      document.getElementById("resetViewBtn").addEventListener("click", flyToInitialOverview);
+
+      const labelsBtn = document.getElementById("toggleLabelsBtn");
+      labelsBtn.addEventListener("click", () => {
+        labelsVisible = !labelsVisible;
+        labelsBtn.classList.toggle("active", labelsVisible);
+        entitiesByIndex.forEach((entity) => {
+          entity.label.show = labelsVisible;
+        });
+      });
+
+      const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      handler.setInputAction((movement) => {
+        const picked = viewer.scene.pick(movement.position);
+        if (Cesium.defined(picked) && picked.id && picked.id.properties) {
+          const idx = picked.id.properties.poiIndex.getValue();
+          if (typeof idx === "number") {
+            flyToPoi(idx);
+          }
+        }
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    }
+
+    initViewer();
+  </script>
+</body>
+</html>
