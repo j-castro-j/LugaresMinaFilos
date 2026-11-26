@@ -642,6 +642,7 @@
     Cesium.Ion.defaultAccessToken = CESIUM_ION_TOKEN;
 
     const viewer = new Cesium.Viewer("cesiumContainer", {
+      baseLayer: false, // Agregamos la capa base satelital explícitamente abajo
       animation: false,
       timeline: false,
       baseLayerPicker: false,
@@ -658,6 +659,19 @@
     const menuButtonsByIndex = [];
     let labelsVisible = true;
 
+    // Capa base satelital de respaldo (Esri World Imagery) para que nunca quede negro
+    function addFallbackBasemap() {
+      try {
+        const esriSat = new Cesium.UrlTemplateImageryProvider({
+          url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          credit: "Esri, Maxar, Earthstar Geographics"
+        });
+        viewer.imageryLayers.addImageryProvider(esriSat, 0);
+      } catch (err) {
+        console.warn("No se pudo cargar la capa base satelital:", err);
+      }
+    }
+
     async function addOrthophotoIfConfigured(assetId) {
       if (!assetId || assetId <= 0) return;
       try {
@@ -671,6 +685,8 @@
     }
 
     async function initViewer() {
+      addFallbackBasemap();
+
       if (USE_WORLD_TERRAIN) {
         try {
           viewer.terrainProvider = await Cesium.createWorldTerrainAsync();
@@ -679,7 +695,7 @@
         }
       }
 
-      // Se cargan ambas ortofotos en orden (la 2 quedará encima de la 1)
+      // Se cargan ambas ortofotos encima del mapa base (la 2 quedará encima de la 1)
       await addOrthophotoIfConfigured(ORTHOPHOTO_1_ASSET_ID);
       await addOrthophotoIfConfigured(ORTHOPHOTO_2_ASSET_ID);
 
