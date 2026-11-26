@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;600;700&display=swap"
     rel="stylesheet"
   />
 
@@ -531,15 +531,22 @@
        [INTERVENIR AQUÍ] Token y Asset IDs de las dos ortofotos en Cesium ion
        La ortofoto 2 se agrega después de la 1 para quedar por encima.
        ===================================================================== */
-    const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImJQV3Nnb3ZGcXd2TEEta00iLCJqdGkiOiJiNGMyMWUxYy1kZTE2LTQ5YTEtYWJkNi0wY2NjNzkzMjQxZTgiLCJpZCI6NDc3MzE0LCJzdWIiOiJqY2FzdHJvaiIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJUb2tlbiBGaWxvcyIsImlhdCI6MTc5MzAzNDMyOX0.WL5gFrYrmJZUr44ug0hF24-q7_IsbNK87RSc3J41A24";
+    const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IldYZHg2M08xTXRqcHBHOVgiLCJqdGkiOiJhODgyMDNjOC0xMzNjLTRhNDgtYjI2Zi0xOTUwYTI4ZTJiNGIiLCJpZCI6NDc3MzE0LCJzdWIiOiJqY2FzdHJvaiIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJUZXN0VG9rZW4iLCJpYXQiOjE3OTMxNDYwOTR9.cnADyWUF60Uq6BWYl7-zqfeAx7v3NivM3pF48F3zf58";
     const ORTHOPHOTO_1_ASSET_ID = 0; // Reemplaza 0 por el ID numérico de la ortofoto base/inferior
     const ORTHOPHOTO_2_ASSET_ID = 6134167; // Reemplaza 0 por el ID numérico de la ortofoto superior
     const USE_WORLD_TERRAIN = true;
 
     /* =====================================================================
-       [INTERVENIR AQUÍ] Color dorado de los marcadores en el mapa
+       [INTERVENIR AQUÍ] Tamaño de texto y color dorado de marcadores
        ===================================================================== */
     const GOLDEN_MARKER_COLOR = Cesium.Color.fromCssColorString("#B6812F");
+    const LABEL_FONT_SIZE_PX = 15; // Ajusta aquí el tamaño de los textos en el mapa (ej. 15, 16, 18)
+
+    /* =====================================================================
+       [INTERVENIR AQUÍ] Punto inicial de carga ("Oficinas Ancillares")
+       ===================================================================== */
+    const INITIAL_FOCUS_POI_NAME = "Oficinas Ancillares";
+    const INITIAL_CAMERA_HEIGHT_M = 2800;
 
     /* =====================================================================
        [INTERVENIR AQUÍ] Grupos del menú ocultable
@@ -642,7 +649,7 @@
     Cesium.Ion.defaultAccessToken = CESIUM_ION_TOKEN;
 
     const viewer = new Cesium.Viewer("cesiumContainer", {
-      baseLayer: false, // Agregamos la capa base satelital explícitamente abajo
+      baseLayer: false,
       animation: false,
       timeline: false,
       baseLayerPicker: false,
@@ -659,7 +666,6 @@
     const menuButtonsByIndex = [];
     let labelsVisible = true;
 
-    // Capa base satelital de respaldo (Esri World Imagery) para que nunca quede negro
     function addFallbackBasemap() {
       try {
         const esriSat = new Cesium.UrlTemplateImageryProvider({
@@ -702,18 +708,20 @@
       createAllPoiEntities();
       buildGroupedDrawerMenu();
       bindEvents();
-      flyToInitialOverview();
+      setInitialViewOnAncillares();
       updateScaleBar();
       updateCompassRotation();
     }
 
     function createAllPoiEntities() {
+      const labelFont = `600 ${LABEL_FONT_SIZE_PX}px 'Open Sans', sans-serif`;
+
       POIS.forEach((poi, idx) => {
         const entity = viewer.entities.add({
           name: poi.name,
           position: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, 0),
           point: {
-            pixelSize: 11,
+            pixelSize: 12,
             color: GOLDEN_MARKER_COLOR,
             outlineColor: Cesium.Color.WHITE,
             outlineWidth: 2,
@@ -723,16 +731,15 @@
           label: {
             text: poi.name,
             show: labelsVisible,
-            font: "600 13px 'Open Sans', sans-serif",
+            font: labelFont,
             fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.fromCssColorString("#182838"),
-            outlineWidth: 3,
+            outlineWidth: 3.5,
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            pixelOffset: new Cesium.Cartesian2(0, -14),
+            pixelOffset: new Cesium.Cartesian2(0, -15),
             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-            scaleByDistance: new Cesium.NearFarScalar(1500, 1.0, 18000, 0.35),
-            translucencyByDistance: new Cesium.NearFarScalar(1500, 1.0, 25000, 0.25),
+            scaleByDistance: new Cesium.NearFarScalar(1200, 1.05, 16000, 0.55),
             disableDepthTestDistance: Number.POSITIVE_INFINITY
           },
           properties: {
@@ -828,20 +835,29 @@
       });
     }
 
-    // [INTERVENIR AQUÍ] Vista inicial general del recorrido
-    function flyToInitialOverview() {
+    // Centra el inicio de carga en "Oficinas Ancillares" (y también sirve para el botón Inicio)
+    function setInitialViewOnAncillares() {
       infoCard.classList.remove("visible");
       menuButtonsByIndex.forEach((btn) => {
         if (btn) btn.classList.remove("selected");
       });
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(-99.682, 17.885, 14500),
+
+      const targetPoi =
+        POIS.find((p) => p.name.toLowerCase() === INITIAL_FOCUS_POI_NAME.toLowerCase()) ||
+        POIS.find((p) => p.name.toLowerCase().includes("ancillares")) ||
+        { lon: -99.6809944, lat: 17.8703528 };
+
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(
+          targetPoi.lon,
+          targetPoi.lat,
+          INITIAL_CAMERA_HEIGHT_M
+        ),
         orientation: {
           heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-65),
+          pitch: Cesium.Math.toRadians(-60),
           roll: 0
-        },
-        duration: 1.1
+        }
       });
     }
 
@@ -907,7 +923,7 @@
         infoCard.classList.remove("visible");
       });
 
-      document.getElementById("resetViewBtn").addEventListener("click", flyToInitialOverview);
+      document.getElementById("resetViewBtn").addEventListener("click", setInitialViewOnAncillares);
       document.getElementById("compassBtn").addEventListener("click", orientCameraNorth);
 
       const labelsBtn = document.getElementById("toggleLabelsBtn");
