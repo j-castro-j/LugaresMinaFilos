@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Visor de Visitas - Ortofoto y Puntos de Interés</title>
 
   <!-- Tipografía (Montserrat + Open Sans) -->
@@ -25,10 +25,10 @@
        [INTERVENIR AQUÍ] Paleta de colores y tipografía
        ===================================================================== */
     :root {
-      --color-primario: #B6812F;     /* Acento dorado / cobre */
-      --color-oscuro: #24415D;       /* Paneles y controles */
-      --color-oscuro-profundo: #182838; /* Fondo profundo */
-      --color-apoyo: #3389A3;        /* Detalles secundarios */
+      --color-dorado: #B6812F;       /* Puntos en mapa y acentos principales */
+      --color-azul-primario: #24415D;/* Paneles y botones base */
+      --color-azul-oscuro: #182838;  /* Fondo profundo y tarjetas */
+      --color-azul-apoyo: #3389A3;   /* Detalles, bordes activos y escala */
       --color-texto: #FFFFFF;
       --color-texto-suave: #D7E2EC;
       --font-titulo: "Montserrat", sans-serif;
@@ -39,6 +39,7 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
     html, body, #cesiumContainer {
@@ -46,16 +47,26 @@
       height: 100%;
       overflow: hidden;
       font-family: var(--font-cuerpo);
-      background-color: var(--color-oscuro-profundo);
+      background-color: var(--color-azul-oscuro);
       color: var(--color-texto);
     }
 
+    .panel {
+      pointer-events: auto;
+      background: rgba(24, 40, 56, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(51, 137, 163, 0.35);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
+    }
+
+    /* Barra superior */
     .topbar {
       position: absolute;
       top: 12px;
       left: 12px;
       right: 12px;
-      z-index: 10;
+      z-index: 20;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -64,18 +75,9 @@
       pointer-events: none;
     }
 
-    .panel {
-      pointer-events: auto;
-      background: rgba(24, 40, 56, 0.90);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    }
-
     .header-box {
-      padding: 10px 16px;
-      border-left: 4px solid var(--color-primario);
+      padding: 10px 15px;
+      border-left: 4px solid var(--color-dorado);
     }
 
     .header-box h1 {
@@ -86,79 +88,85 @@
     }
 
     .header-box p {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--color-texto-suave);
     }
 
     .controls-box {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 8px;
-      padding: 8px 12px;
-    }
-
-    select, button {
-      font-family: var(--font-cuerpo);
-      font-size: 0.84rem;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    select {
-      background-color: var(--color-oscuro);
-      color: var(--color-texto);
-      padding: 7px 10px;
-      max-width: 260px;
+      padding: 8px 10px;
     }
 
     button {
-      background-color: var(--color-oscuro);
-      color: var(--color-texto);
-      padding: 7px 11px;
+      font-family: var(--font-cuerpo);
+      font-size: 0.82rem;
       font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background-color: var(--color-azul-primario);
+      color: var(--color-texto);
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
     }
 
     button:hover {
-      border-color: var(--color-primario);
+      border-color: var(--color-azul-apoyo);
+      background-color: #2b4e70;
     }
 
     button.active {
-      background-color: var(--color-primario);
+      background-color: var(--color-azul-apoyo);
+      border-color: #6bc2dc;
       color: #FFFFFF;
-      border-color: var(--color-primario);
     }
 
-    .info-card {
+    .btn-dorado {
+      background-color: var(--color-dorado);
+      border-color: #d39b43;
+    }
+
+    .btn-dorado:hover {
+      background-color: #c88e35;
+      border-color: #e4ad54;
+    }
+
+    /* Menú ocultable agrupado por categorías */
+    .drawer-menu {
       position: absolute;
       top: 74px;
-      right: 12px;
-      width: 310px;
+      left: 12px;
+      width: 320px;
       max-width: calc(100% - 24px);
-      z-index: 10;
-      padding: 14px 16px;
+      max-height: calc(100% - 140px);
+      z-index: 25;
       display: none;
-      border-top: 3px solid var(--color-primario);
+      flex-direction: column;
+      overflow: hidden;
+      border-top: 3px solid var(--color-azul-apoyo);
     }
 
-    .info-card.visible {
-      display: block;
-    }
-
-    .info-card-header {
+    .drawer-menu.open {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 8px;
     }
 
-    .info-card h2 {
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background-color: var(--color-azul-primario);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .drawer-header h2 {
       font-family: var(--font-titulo);
-      font-size: 1rem;
+      font-size: 0.92rem;
       font-weight: 700;
-      line-height: 1.25;
     }
 
     .close-btn {
@@ -170,46 +178,241 @@
     }
 
     .close-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
       color: #FFFFFF;
     }
 
+    .drawer-body {
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .group-section {
+      margin-bottom: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(36, 65, 93, 0.45);
+    }
+
+    .group-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      padding: 9px 12px;
+      border: none;
+      border-radius: 0;
+      background: rgba(36, 65, 93, 0.85);
+      font-family: var(--font-titulo);
+      font-size: 0.82rem;
+    }
+
+    .group-toggle:hover {
+      background: rgba(51, 137, 163, 0.35);
+    }
+
+    .group-count {
+      font-family: var(--font-cuerpo);
+      font-size: 0.72rem;
+      background: rgba(24, 40, 56, 0.75);
+      padding: 2px 7px;
+      border-radius: 999px;
+      color: var(--color-texto-suave);
+    }
+
+    .group-items {
+      display: none;
+      flex-direction: column;
+      padding: 4px;
+      gap: 2px;
+    }
+
+    .group-section.expanded .group-items {
+      display: flex;
+    }
+
+    .poi-item-btn {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-weight: 400;
+      font-size: 0.82rem;
+      color: var(--color-texto-suave);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .poi-item-btn::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--color-dorado);
+      flex-shrink: 0;
+    }
+
+    .poi-item-btn:hover,
+    .poi-item-btn.selected {
+      background-color: rgba(182, 129, 47, 0.25);
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+
+    /* Tarjeta informativa al seleccionar un punto */
+    .info-card {
+      position: absolute;
+      top: 74px;
+      right: 12px;
+      width: 300px;
+      max-width: calc(100% - 24px);
+      z-index: 22;
+      padding: 14px 16px;
+      display: none;
+      border-top: 3px solid var(--color-dorado);
+    }
+
+    .info-card.visible {
+      display: block;
+    }
+
+    .info-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .info-card h2 {
+      font-family: var(--font-titulo);
+      font-size: 0.98rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .info-card-group {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #8fd6ec;
+      margin-bottom: 8px;
+    }
+
     .info-card p {
-      font-size: 0.84rem;
+      font-size: 0.83rem;
       line-height: 1.45;
       color: var(--color-texto-suave);
       margin-bottom: 10px;
     }
 
     .coords-line {
-      font-size: 0.74rem;
-      color: #A7B8C9;
+      font-size: 0.73rem;
+      color: #a9bfd4;
       font-family: monospace;
     }
 
-    @media (max-width: 640px) {
+    /* Escala gráfica */
+    .scale-bar-box {
+      position: absolute;
+      bottom: 16px;
+      left: 12px;
+      z-index: 20;
+      padding: 8px 12px;
+      pointer-events: none;
+    }
+
+    .scale-label {
+      font-family: var(--font-titulo);
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--color-texto);
+      margin-bottom: 5px;
+      text-align: center;
+    }
+
+    .scale-line-wrap {
+      display: flex;
+      align-items: center;
+    }
+
+    .scale-bar {
+      height: 6px;
+      width: 110px;
+      border-left: 2px solid var(--color-dorado);
+      border-right: 2px solid var(--color-dorado);
+      border-bottom: 2px solid #FFFFFF;
+      background: linear-gradient(
+        90deg,
+        rgba(51, 137, 163, 0.85) 0%,
+        rgba(51, 137, 163, 0.85) 50%,
+        rgba(182, 129, 47, 0.85) 50%,
+        rgba(182, 129, 47, 0.85) 100%
+      );
+    }
+
+    /* Ajustes específicos para móviles y tabletas */
+    @media (max-width: 680px) {
       .topbar {
         top: 8px;
         left: 8px;
         right: 8px;
+        gap: 6px;
       }
+
       .header-box {
         width: 100%;
         padding: 8px 12px;
       }
+
+      .header-box h1 {
+        font-size: 0.92rem;
+      }
+
       .controls-box {
         width: 100%;
         justify-content: space-between;
+        padding: 6px 8px;
+        gap: 6px;
       }
-      select {
+
+      .controls-box button {
         flex: 1;
-        max-width: none;
+        padding: 8px 8px;
+        font-size: 0.78rem;
+        text-align: center;
       }
+
+      .drawer-menu {
+        top: 118px;
+        left: 8px;
+        right: 8px;
+        width: auto;
+        max-height: calc(100% - 185px);
+      }
+
       .info-card {
         top: auto;
-        bottom: 14px;
-        right: 8px;
+        bottom: 64px;
         left: 8px;
+        right: 8px;
         width: auto;
+        padding: 12px 14px;
+      }
+
+      .scale-bar-box {
+        bottom: 8px;
+        left: 8px;
+        padding: 6px 10px;
+      }
+
+      .scale-bar {
+        width: 90px;
       }
     }
   </style>
@@ -217,130 +420,161 @@
 <body>
   <div id="cesiumContainer"></div>
 
+  <!-- Barra superior -->
   <div class="topbar">
     <div class="panel header-box">
       <!-- [INTERVENIR AQUÍ] Título y subtítulo del visor -->
-      <h1>Recorrido de Visitas</h1>
-      <p>Ortofoto de sitio y puntos de interés</p>
+      <h1>Mina Los Filos</h1>
+      <p>Ortofoto de sitio y puntos de referencia</p>
     </div>
 
     <div class="panel controls-box">
-      <select id="poiSelect" aria-label="Ir a un punto">
-        <option value="">Ir a un lugar...</option>
-      </select>
-      <button id="toggleLabelsBtn" class="active" title="Mostrar u ocultar etiquetas">
-        Etiquetas
+      <button id="toggleMenuBtn" class="btn-dorado" aria-expanded="false">
+        Lugares
       </button>
-      <button id="resetViewBtn" title="Vista general">
+      <button id="toggleLabelsBtn" class="active">
+        Ocultar etiquetas
+      </button>
+      <button id="resetViewBtn">
         Inicio
       </button>
     </div>
   </div>
 
+  <!-- Menú ocultable agrupado por categorías -->
+  <aside id="drawerMenu" class="panel drawer-menu" aria-label="Menú de lugares agrupados">
+    <div class="drawer-header">
+      <h2>Lugares por grupo</h2>
+      <button id="closeDrawerBtn" class="close-btn" aria-label="Cerrar menú">✕</button>
+    </div>
+    <div id="drawerBody" class="drawer-body"></div>
+  </aside>
+
+  <!-- Tarjeta informativa al seleccionar un punto -->
   <div id="infoCard" class="panel info-card">
     <div class="info-card-header">
       <h2 id="cardTitle">Nombre del lugar</h2>
-      <button id="closeCardBtn" class="close-btn" aria-label="Cerrar">✕</button>
+      <button id="closeCardBtn" class="close-btn" aria-label="Cerrar tarjeta">✕</button>
     </div>
+    <span id="cardGroup" class="info-card-group">Grupo</span>
     <p id="cardDescription">Descripción del lugar.</p>
     <div id="cardCoords" class="coords-line"></div>
+  </div>
+
+  <!-- Escala gráfica dinámica -->
+  <div class="panel scale-bar-box" aria-label="Escala gráfica">
+    <div id="scaleText" class="scale-label">0 m</div>
+    <div class="scale-line-wrap">
+      <div id="scaleBar" class="scale-bar"></div>
+    </div>
   </div>
 
   <script>
     /* =====================================================================
        [INTERVENIR AQUÍ] Credenciales y Asset ID de Cesium ion
        ===================================================================== */
-    const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImFveUJVMGZrSnJLaDY4YnAiLCJqdGkiOiI3YTAzYzNiNi04M2Y0LTQzNTYtYTUwZS0xZjFlYjRiYTFiMDEiLCJpZCI6NDc3MzE0LCJzdWIiOiJqY2FzdHJvaiIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJUb2tlbiBCYWxzYXMgV0dTODQiLCJpYXQiOjE3OTQxNDg3OTR9.LmMadfxwRLLqVzBvfdqgrtytkdqtiiIawye9J63QEwI";
+    const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImJQV3Nnb3ZGcXd2TEEta00iLCJqdGkiOiJiNGMyMWUxYy1kZTE2LTQ5YTEtYWJkNi0wY2NjNzkzMjQxZTgiLCJpZCI6NDc3MzE0LCJzdWIiOiJqY2FzdHJvaiIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJUb2tlbiBGaWxvcyIsImlhdCI6MTc5MzAzNDMyOX0.WL5gFrYrmJZUr44ug0hF24-q7_IsbNK87RSc3J41A24";
     const ORTHOPHOTO_ASSET_ID = 6134167; // Reemplaza 0 por el ID numérico de tu ortofoto en Cesium ion
     const USE_WORLD_TERRAIN = true;
 
     /* =====================================================================
-       [INTERVENIR AQUÍ] Color único de marcadores en el mapa
+       [INTERVENIR AQUÍ] Color dorado de los marcadores en el mapa
        ===================================================================== */
-    const MARKER_COLOR = Cesium.Color.fromCssColorString("#B6812F");
+    const GOLDEN_MARKER_COLOR = Cesium.Color.fromCssColorString("#B6812F");
 
     /* =====================================================================
-       [INTERVENIR AQUÍ] Lista completa de puntos de interés (POIs)
-       Puedes reacomodar el orden o editar "name" y "description".
-       Coordenadas en grados decimales WGS84: { name, lat, lon, description }
+       [INTERVENIR AQUÍ] Grupos del menú ocultable
+       Puedes reordenar o renombrar los grupos aquí.
+       ===================================================================== */
+    const GROUPS = [
+      { id: "tajos", name: "Tajos y Extracción" },
+      { id: "procesos", name: "Proceso y PADs" },
+      { id: "infraestructura", name: "Infraestructura y Apoyo" },
+      { id: "canadas", name: "Cañadas y Tepetateras" },
+      { id: "entorno", name: "Comunidades y Entorno" }
+    ];
+
+    /* =====================================================================
+       [INTERVENIR AQUÍ] Lista de puntos de interés (POIs)
+       Puedes reacomodar el orden, cambiar "group" o editar "description".
        ===================================================================== */
     const POIS = [
-      { name: "Carrizalillo", lat: 17.8516194, lon: -99.7119583, description: "" },
-      { name: "Area para PAD 3", lat: 17.8582611, lon: -99.7006750, description: "" },
-      { name: "Rebombeo de PADS", lat: 17.8575222, lon: -99.6970806, description: "" },
-      { name: "Antiguo campamento de contratistas", lat: 17.8529944, lon: -99.6971139, description: "" },
-      { name: "Aglomerador", lat: 17.8636444, lon: -99.6942694, description: "" },
-      { name: "PAD 1", lat: 17.8643861, lon: -99.6915083, description: "" },
-      { name: "PAD 2", lat: 17.8644556, lon: -99.7020500, description: "" },
-      { name: "Canal Oeste", lat: 17.8642444, lon: -99.7057056, description: "" },
-      { name: "Relleno Sanitario Carrizalillo", lat: 17.8679667, lon: -99.7093278, description: "" },
-      { name: "Pileta de contingencias 2", lat: 17.8707167, lon: -99.7021417, description: "" },
-      { name: "Pileta de solucion rica PAD 2", lat: 17.8688306, lon: -99.7006917, description: "" },
-      { name: "Planta procesos", lat: 17.8702583, lon: -99.6995000, description: "" },
-      { name: "Cañada 23 (Sur)", lat: 17.8777444, lon: -99.7035583, description: "" },
-      { name: "Pileta de contingencias 1", lat: 17.8724417, lon: -99.6992194, description: "" },
-      { name: "Pileta de recirculacion", lat: 17.8700444, lon: -99.6977750, description: "" },
-      { name: "Pileta Norte PAD 1", lat: 17.8702667, lon: -99.6966722, description: "" },
-      { name: "Pileta Sur PAD 1", lat: 17.8696444, lon: -99.6970167, description: "" },
-      { name: "Oficinas de supervision de ...", lat: 17.8752250, lon: -99.6915333, description: "" },
-      { name: "Camino perimetral", lat: 17.8741472, lon: -99.6886583, description: "" },
-      { name: "Antiguo aglomerador (Ahora ...)", lat: 17.8765722, lon: -99.6910278, description: "" },
-      { name: "Silo de cal Bermejal", lat: 17.8640694, lon: -99.6841722, description: "" },
-      { name: "Patio de arranque Tajo Bermejal", lat: 17.8627028, lon: -99.6829583, description: "" },
-      { name: "Mirador Tajo Bermejal", lat: 17.8594083, lon: -99.6814222, description: "" },
-      { name: "Tepetatera Sur Bermejal", lat: 17.8514639, lon: -99.6825222, description: "" },
-      { name: "Polvorin", lat: 17.8452139, lon: -99.6791111, description: "" },
-      { name: "Tajo Bermejal", lat: 17.8572139, lon: -99.6767944, description: "" },
-      { name: "Bocamina Bermejal UG", lat: 17.8634889, lon: -99.6770972, description: "" },
-      { name: "Tepetatera Norte Guadalupe", lat: 17.8661639, lon: -99.6655611, description: "" },
-      { name: "Tajo Guadalupe", lat: 17.8535778, lon: -99.6690444, description: "" },
-      { name: "Obra de Contencion Cañada ...", lat: 17.8539222, lon: -99.6621250, description: "" },
-      { name: "Cañada Guadalupe", lat: 17.8510611, lon: -99.6479000, description: "" },
-      { name: "Xochipala", lat: 17.8123333, lon: -99.6409667, description: "" },
-      { name: "Cañada El Papayo", lat: 17.8668083, lon: -99.6590278, description: "" },
-      { name: "Cerrro Cuatepetl", lat: 17.8718194, lon: -99.6732611, description: "" },
-      { name: "Oficinas Ancillares", lat: 17.8703528, lon: -99.6809944, description: "" },
-      { name: "Taller Mtto OP y Almacen", lat: 17.8693778, lon: -99.6817222, description: "" },
-      { name: "Bodega de Nucleos OP", lat: 17.8681694, lon: -99.6804139, description: "" },
-      { name: "Campamento IPAE", lat: 17.8667167, lon: -99.6827361, description: "" },
-      { name: "Concretera BUG", lat: 17.8669944, lon: -99.6844472, description: "" },
-      { name: "Tajo La Agüita", lat: 17.8902111, lon: -99.6805417, description: "" },
-      { name: "Tajo Filos Fase 1", lat: 17.8879472, lon: -99.6753694, description: "" },
-      { name: "Tajo Filos Zona 70", lat: 17.8833333, lon: -99.6861472, description: "" },
-      { name: "Tepetatera Sur Filos", lat: 17.8811694, lon: -99.6894250, description: "" },
-      { name: "Tepetatera Oriente Filos (re...)", lat: 17.8843694, lon: -99.6695917, description: "" },
-      { name: "Aeropista", lat: 17.8918611, lon: -99.6694528, description: "" },
-      { name: "Subestacion Principal", lat: 17.8973889, lon: -99.6693778, description: "" },
-      { name: "Tepetatera Norte Filos", lat: 17.8971861, lon: -99.6771333, description: "" },
-      { name: "Cañada La Agüita", lat: 17.9003889, lon: -99.6799056, description: "" },
-      { name: "Casa de Piedra", lat: 17.8958500, lon: -99.6814750, description: "" },
-      { name: "Tajo Nukay", lat: 17.8970611, lon: -99.6954583, description: "" },
-      { name: "Bodega de Nucleos UG", lat: 17.8980722, lon: -99.6937278, description: "" },
-      { name: "Taller y Bullpen UG", lat: 17.8978639, lon: -99.6915750, description: "" },
-      { name: "Concretera FUG", lat: 17.8981944, lon: -99.6881389, description: "" },
-      { name: "Pueble Conchita", lat: 17.8955028, lon: -99.6914806, description: "" },
-      { name: "Bocamina Conchita", lat: 17.8942333, lon: -99.6930639, description: "" },
-      { name: "Cañada Nukay", lat: 17.8938444, lon: -99.7011639, description: "" },
-      { name: "Bocamina Diegos", lat: 17.8907750, lon: -99.7045278, description: "" },
-      { name: "Mazapa", lat: 17.9103361, lon: -99.6985583, description: "" },
-      { name: "Cañada Mazapa (Sur)", lat: 17.9131417, lon: -99.7028500, description: "" },
-      { name: "Desemboque de Cañada Mazapa", lat: 17.9615667, lon: -99.6904111, description: "" },
-      { name: "Cañada Mazapa (Norte)", lat: 17.9441194, lon: -99.6981472, description: "" },
-      { name: "Relleno Sanitario Mezcala", lat: 17.9295417, lon: -99.6247056, description: "" },
-      { name: "Colonia Los Filos", lat: 17.9264750, lon: -99.6254417, description: "" },
-      { name: "Mezcala", lat: 17.9306667, lon: -99.6067889, description: "" },
-      { name: "Bombeo 1", lat: 17.9285139, lon: -99.6209944, description: "" },
-      { name: "Rebombeo 2", lat: 17.9279222, lon: -99.6231917, description: "" },
-      { name: "Rebombeo 3", lat: 17.9010306, lon: -99.6486667, description: "" },
-      { name: "Rebombeo 4", lat: 17.8919361, lon: -99.6630194, description: "" },
-      { name: "Cañada 23 (Norte)", lat: 17.8933250, lon: -99.7057528, description: "" },
-      { name: "Bocamina San Andres", lat: 17.8871250, lon: -99.6980139, description: "" },
-      { name: "Vaciadero San Andres", lat: 17.8860667, lon: -99.6997750, description: "" },
-      { name: "Trituracion", lat: 17.8785250, lon: -99.6874000, description: "" },
-      { name: "Antiguo Control Vehicular", lat: 17.8781944, lon: -99.6843056, description: "" },
-      { name: "Patio de arranque Tajo Filos", lat: 17.8757667, lon: -99.6820889, description: "" },
-      { name: "Canal Interior", lat: 17.8764611, lon: -99.6950194, description: "" },
-      { name: "Paraje Los Cocos", lat: 17.8480917, lon: -99.7026361, description: "" }
+      { name: "Carrizalillo", group: "entorno", lat: 17.8516194, lon: -99.7119583, description: "" },
+      { name: "Area para PAD 3", group: "procesos", lat: 17.8582611, lon: -99.7006750, description: "" },
+      { name: "Rebombeo de PADS", group: "procesos", lat: 17.8575222, lon: -99.6970806, description: "" },
+      { name: "Antiguo campamento de contratistas", group: "infraestructura", lat: 17.8529944, lon: -99.6971139, description: "" },
+      { name: "Aglomerador", group: "procesos", lat: 17.8636444, lon: -99.6942694, description: "" },
+      { name: "PAD 1", group: "procesos", lat: 17.8643861, lon: -99.6915083, description: "" },
+      { name: "PAD 2", group: "procesos", lat: 17.8644556, lon: -99.7020500, description: "" },
+      { name: "Canal Oeste", group: "infraestructura", lat: 17.8642444, lon: -99.7057056, description: "" },
+      { name: "Relleno Sanitario Carrizalillo", group: "entorno", lat: 17.8679667, lon: -99.7093278, description: "" },
+      { name: "Pileta de contingencias 2", group: "procesos", lat: 17.8707167, lon: -99.7021417, description: "" },
+      { name: "Pileta de solucion rica PAD 2", group: "procesos", lat: 17.8688306, lon: -99.7006917, description: "" },
+      { name: "Planta procesos", group: "procesos", lat: 17.8702583, lon: -99.6995000, description: "" },
+      { name: "Cañada 23 (Sur)", group: "canadas", lat: 17.8777444, lon: -99.7035583, description: "" },
+      { name: "Pileta de contingencias 1", group: "procesos", lat: 17.8724417, lon: -99.6992194, description: "" },
+      { name: "Pileta de recirculacion", group: "procesos", lat: 17.8700444, lon: -99.6977750, description: "" },
+      { name: "Pileta Norte PAD 1", group: "procesos", lat: 17.8702667, lon: -99.6966722, description: "" },
+      { name: "Pileta Sur PAD 1", group: "procesos", lat: 17.8696444, lon: -99.6970167, description: "" },
+      { name: "Oficinas de supervision de ...", group: "infraestructura", lat: 17.8752250, lon: -99.6915333, description: "" },
+      { name: "Camino perimetral", group: "infraestructura", lat: 17.8741472, lon: -99.6886583, description: "" },
+      { name: "Antiguo aglomerador (Ahora ...)", group: "procesos", lat: 17.8765722, lon: -99.6910278, description: "" },
+      { name: "Silo de cal Bermejal", group: "procesos", lat: 17.8640694, lon: -99.6841722, description: "" },
+      { name: "Patio de arranque Tajo Bermejal", group: "tajos", lat: 17.8627028, lon: -99.6829583, description: "" },
+      { name: "Mirador Tajo Bermejal", group: "tajos", lat: 17.8594083, lon: -99.6814222, description: "" },
+      { name: "Tepetatera Sur Bermejal", group: "canadas", lat: 17.8514639, lon: -99.6825222, description: "" },
+      { name: "Polvorin", group: "tajos", lat: 17.8452139, lon: -99.6791111, description: "" },
+      { name: "Tajo Bermejal", group: "tajos", lat: 17.8572139, lon: -99.6767944, description: "" },
+      { name: "Bocamina Bermejal UG", group: "tajos", lat: 17.8634889, lon: -99.6770972, description: "" },
+      { name: "Tepetatera Norte Guadalupe", group: "canadas", lat: 17.8661639, lon: -99.6655611, description: "" },
+      { name: "Tajo Guadalupe", group: "tajos", lat: 17.8535778, lon: -99.6690444, description: "" },
+      { name: "Obra de Contencion Cañada ...", group: "canadas", lat: 17.8539222, lon: -99.6621250, description: "" },
+      { name: "Cañada Guadalupe", group: "canadas", lat: 17.8510611, lon: -99.6479000, description: "" },
+      { name: "Xochipala", group: "entorno", lat: 17.8123333, lon: -99.6409667, description: "" },
+      { name: "Cañada El Papayo", group: "canadas", lat: 17.8668083, lon: -99.6590278, description: "" },
+      { name: "Cerrro Cuatepetl", group: "canadas", lat: 17.8718194, lon: -99.6732611, description: "" },
+      { name: "Oficinas Ancillares", group: "infraestructura", lat: 17.8703528, lon: -99.6809944, description: "" },
+      { name: "Taller Mtto OP y Almacen", group: "infraestructura", lat: 17.8693778, lon: -99.6817222, description: "" },
+      { name: "Bodega de Nucleos OP", group: "infraestructura", lat: 17.8681694, lon: -99.6804139, description: "" },
+      { name: "Campamento IPAE", group: "infraestructura", lat: 17.8667167, lon: -99.6827361, description: "" },
+      { name: "Concretera BUG", group: "procesos", lat: 17.8669944, lon: -99.6844472, description: "" },
+      { name: "Tajo La Agüita", group: "tajos", lat: 17.8902111, lon: -99.6805417, description: "" },
+      { name: "Tajo Filos Fase 1", group: "tajos", lat: 17.8879472, lon: -99.6753694, description: "" },
+      { name: "Tajo Filos Zona 70", group: "tajos", lat: 17.8833333, lon: -99.6861472, description: "" },
+      { name: "Tepetatera Sur Filos", group: "canadas", lat: 17.8811694, lon: -99.6894250, description: "" },
+      { name: "Tepetatera Oriente Filos (re...)", group: "canadas", lat: 17.8843694, lon: -99.6695917, description: "" },
+      { name: "Aeropista", group: "infraestructura", lat: 17.8918611, lon: -99.6694528, description: "" },
+      { name: "Subestacion Principal", group: "infraestructura", lat: 17.8973889, lon: -99.6693778, description: "" },
+      { name: "Tepetatera Norte Filos", group: "canadas", lat: 17.8971861, lon: -99.6771333, description: "" },
+      { name: "Cañada La Agüita", group: "canadas", lat: 17.9003889, lon: -99.6799056, description: "" },
+      { name: "Casa de Piedra", group: "entorno", lat: 17.8958500, lon: -99.6814750, description: "" },
+      { name: "Tajo Nukay", group: "tajos", lat: 17.8970611, lon: -99.6954583, description: "" },
+      { name: "Bodega de Nucleos UG", group: "infraestructura", lat: 17.8980722, lon: -99.6937278, description: "" },
+      { name: "Taller y Bullpen UG", group: "infraestructura", lat: 17.8978639, lon: -99.6915750, description: "" },
+      { name: "Concretera FUG", group: "procesos", lat: 17.8981944, lon: -99.6881389, description: "" },
+      { name: "Pueble Conchita", group: "entorno", lat: 17.8955028, lon: -99.6914806, description: "" },
+      { name: "Bocamina Conchita", group: "tajos", lat: 17.8942333, lon: -99.6930639, description: "" },
+      { name: "Cañada Nukay", group: "canadas", lat: 17.8938444, lon: -99.7011639, description: "" },
+      { name: "Bocamina Diegos", group: "tajos", lat: 17.8907750, lon: -99.7045278, description: "" },
+      { name: "Mazapa", group: "entorno", lat: 17.9103361, lon: -99.6985583, description: "" },
+      { name: "Cañada Mazapa (Sur)", group: "canadas", lat: 17.9131417, lon: -99.7028500, description: "" },
+      { name: "Desemboque de Cañada Mazapa", group: "canadas", lat: 17.9615667, lon: -99.6904111, description: "" },
+      { name: "Cañada Mazapa (Norte)", group: "canadas", lat: 17.9441194, lon: -99.6981472, description: "" },
+      { name: "Relleno Sanitario Mezcala", group: "entorno", lat: 17.9295417, lon: -99.6247056, description: "" },
+      { name: "Colonia Los Filos", group: "entorno", lat: 17.9264750, lon: -99.6254417, description: "" },
+      { name: "Mezcala", group: "entorno", lat: 17.9306667, lon: -99.6067889, description: "" },
+      { name: "Bombeo 1", group: "procesos", lat: 17.9285139, lon: -99.6209944, description: "" },
+      { name: "Rebombeo 2", group: "procesos", lat: 17.9279222, lon: -99.6231917, description: "" },
+      { name: "Rebombeo 3", group: "procesos", lat: 17.9010306, lon: -99.6486667, description: "" },
+      { name: "Rebombeo 4", group: "procesos", lat: 17.8919361, lon: -99.6630194, description: "" },
+      { name: "Cañada 23 (Norte)", group: "canadas", lat: 17.8933250, lon: -99.7057528, description: "" },
+      { name: "Bocamina San Andres", group: "tajos", lat: 17.8871250, lon: -99.6980139, description: "" },
+      { name: "Vaciadero San Andres", group: "tajos", lat: 17.8860667, lon: -99.6997750, description: "" },
+      { name: "Trituracion", group: "tajos", lat: 17.8785250, lon: -99.6874000, description: "" },
+      { name: "Antiguo Control Vehicular", group: "infraestructura", lat: 17.8781944, lon: -99.6843056, description: "" },
+      { name: "Patio de arranque Tajo Filos", group: "tajos", lat: 17.8757667, lon: -99.6820889, description: "" },
+      { name: "Canal Interior", group: "infraestructura", lat: 17.8764611, lon: -99.6950194, description: "" },
+      { name: "Paraje Los Cocos", group: "entorno", lat: 17.8480917, lon: -99.7026361, description: "" }
     ];
 
     // =====================================================================
@@ -362,6 +596,7 @@
     });
 
     const entitiesByIndex = [];
+    const menuButtonsByIndex = [];
     let labelsVisible = true;
 
     async function initViewer() {
@@ -385,11 +620,13 @@
       }
 
       createAllPoiEntities();
-      populatePoiDropdown();
+      buildGroupedDrawerMenu();
       bindEvents();
       flyToInitialOverview();
+      updateScaleBar();
     }
 
+    // Todos los marcadores se despliegan en el mapa desde el inicio con color dorado
     function createAllPoiEntities() {
       POIS.forEach((poi, idx) => {
         const entity = viewer.entities.add({
@@ -397,7 +634,7 @@
           position: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, 0),
           point: {
             pixelSize: 11,
-            color: MARKER_COLOR,
+            color: GOLDEN_MARKER_COLOR,
             outlineColor: Cesium.Color.WHITE,
             outlineWidth: 2,
             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
@@ -405,6 +642,7 @@
           },
           label: {
             text: poi.name,
+            show: labelsVisible,
             font: "600 13px 'Open Sans', sans-serif",
             fillColor: Cesium.Color.WHITE,
             outlineColor: Cesium.Color.fromCssColorString("#182838"),
@@ -426,31 +664,78 @@
       });
     }
 
+    // Construye el menú agrupado dentro del cajón ocultable
+    function buildGroupedDrawerMenu() {
+      const drawerBody = document.getElementById("drawerBody");
+      drawerBody.innerHTML = "";
+
+      GROUPS.forEach((group, gIdx) => {
+        const items = POIS
+          .map((poi, idx) => ({ poi, idx }))
+          .filter((entry) => entry.poi.group === group.id);
+
+        if (items.length === 0) return;
+
+        const section = document.createElement("div");
+        section.className = gIdx === 0 ? "group-section expanded" : "group-section";
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.className = "group-toggle";
+        toggleBtn.innerHTML = `<span>${group.name}</span><span class="group-count">${items.length}</span>`;
+        toggleBtn.addEventListener("click", () => {
+          section.classList.toggle("expanded");
+        });
+
+        const listDiv = document.createElement("div");
+        listDiv.className = "group-items";
+
+        items.forEach(({ poi, idx }) => {
+          const itemBtn = document.createElement("button");
+          itemBtn.className = "poi-item-btn";
+          itemBtn.textContent = poi.name;
+          itemBtn.addEventListener("click", () => {
+            flyToPoi(idx);
+            if (window.innerWidth <= 680) {
+              setDrawerOpen(false);
+            }
+          });
+          menuButtonsByIndex[idx] = itemBtn;
+          listDiv.appendChild(itemBtn);
+        });
+
+        section.appendChild(toggleBtn);
+        section.appendChild(listDiv);
+        drawerBody.appendChild(section);
+      });
+    }
+
+    const drawerMenu = document.getElementById("drawerMenu");
+    const toggleMenuBtn = document.getElementById("toggleMenuBtn");
     const infoCard = document.getElementById("infoCard");
     const cardTitle = document.getElementById("cardTitle");
+    const cardGroup = document.getElementById("cardGroup");
     const cardDescription = document.getElementById("cardDescription");
     const cardCoords = document.getElementById("cardCoords");
-    const poiSelect = document.getElementById("poiSelect");
 
-    function populatePoiDropdown() {
-      poiSelect.innerHTML = '<option value="">Ir a un lugar...</option>';
-      POIS.forEach((poi, idx) => {
-        const opt = document.createElement("option");
-        opt.value = String(idx);
-        opt.textContent = poi.name;
-        poiSelect.appendChild(opt);
-      });
+    function setDrawerOpen(isOpen) {
+      drawerMenu.classList.toggle("open", isOpen);
+      toggleMenuBtn.setAttribute("aria-expanded", String(isOpen));
     }
 
     function flyToPoi(idx) {
       const poi = POIS[idx];
       if (!poi) return;
 
+      menuButtonsByIndex.forEach((btn, i) => {
+        if (btn) btn.classList.toggle("selected", i === idx);
+      });
+
+      const grp = GROUPS.find((g) => g.id === poi.group);
       cardTitle.textContent = poi.name;
+      cardGroup.textContent = grp ? grp.name : "";
       cardDescription.textContent = poi.description || "Punto de interés en sitio.";
       cardCoords.textContent = `Lat: ${poi.lat.toFixed(6)} | Lon: ${poi.lon.toFixed(6)}`;
       infoCard.classList.add("visible");
-      poiSelect.value = String(idx);
 
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(poi.lon, poi.lat, 1200),
@@ -459,14 +744,16 @@
           pitch: Cesium.Math.toRadians(-45),
           roll: 0
         },
-        duration: 1.2
+        duration: 1.1
       });
     }
 
     // [INTERVENIR AQUÍ] Vista inicial general del recorrido
     function flyToInitialOverview() {
       infoCard.classList.remove("visible");
-      poiSelect.value = "";
+      menuButtonsByIndex.forEach((btn) => {
+        if (btn) btn.classList.remove("selected");
+      });
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(-99.682, 17.885, 14500),
         orientation: {
@@ -474,15 +761,48 @@
           pitch: Cesium.Math.toRadians(-65),
           roll: 0
         },
-        duration: 1.2
+        duration: 1.1
       });
     }
 
+    // Escala gráfica dinámica basada en el ancho de la barra y la escala en el centro de pantalla
+    function updateScaleBar() {
+      const scaleBar = document.getElementById("scaleBar");
+      const scaleText = document.getElementById("scaleText");
+      const barWidthPx = scaleBar.offsetWidth || 110;
+
+      const width = viewer.scene.canvas.clientWidth;
+      const height = viewer.scene.canvas.clientHeight;
+      if (!width || !height) return;
+
+      const leftRay = viewer.camera.getPickRay(new Cesium.Cartesian2(width * 0.5 - barWidthPx * 0.5, height * 0.5));
+      const rightRay = viewer.camera.getPickRay(new Cesium.Cartesian2(width * 0.5 + barWidthPx * 0.5, height * 0.5));
+
+      const pLeft = leftRay ? viewer.scene.globe.pick(leftRay, viewer.scene) : null;
+      const pRight = rightRay ? viewer.scene.globe.pick(rightRay, viewer.scene) : null;
+
+      let meters = 0;
+      if (pLeft && pRight) {
+        meters = Cesium.Cartesian3.distance(pLeft, pRight);
+      } else {
+        const camHeight = viewer.camera.positionCartographic.height || 10000;
+        meters = camHeight * 0.18;
+      }
+
+      if (meters >= 1000) {
+        scaleText.textContent = `${(meters / 1000).toFixed(meters >= 10000 ? 1 : 2)} km`;
+      } else {
+        scaleText.textContent = `${Math.round(meters)} m`;
+      }
+    }
+
     function bindEvents() {
-      poiSelect.addEventListener("change", (e) => {
-        if (e.target.value !== "") {
-          flyToPoi(Number(e.target.value));
-        }
+      toggleMenuBtn.addEventListener("click", () => {
+        setDrawerOpen(!drawerMenu.classList.contains("open"));
+      });
+
+      document.getElementById("closeDrawerBtn").addEventListener("click", () => {
+        setDrawerOpen(false);
       });
 
       document.getElementById("closeCardBtn").addEventListener("click", () => {
@@ -494,11 +814,15 @@
       const labelsBtn = document.getElementById("toggleLabelsBtn");
       labelsBtn.addEventListener("click", () => {
         labelsVisible = !labelsVisible;
+        labelsBtn.textContent = labelsVisible ? "Ocultar etiquetas" : "Mostrar etiquetas";
         labelsBtn.classList.toggle("active", labelsVisible);
         entitiesByIndex.forEach((entity) => {
           entity.label.show = labelsVisible;
         });
       });
+
+      viewer.camera.changed.addEventListener(updateScaleBar);
+      window.addEventListener("resize", updateScaleBar);
 
       const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
       handler.setInputAction((movement) => {
