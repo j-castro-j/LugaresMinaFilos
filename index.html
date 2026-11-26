@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Visor de Visitas - Ortofoto y Puntos de Interés</title>
+  <title>Visor de Visitas - Ortofotos y Puntos de Interés</title>
 
   <!-- Tipografía (Montserrat + Open Sans) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,10 +25,10 @@
        [INTERVENIR AQUÍ] Paleta de colores y tipografía
        ===================================================================== */
     :root {
-      --color-dorado: #B6812F;       /* Puntos en mapa y acentos principales */
-      --color-azul-primario: #24415D;/* Paneles y botones base */
-      --color-azul-oscuro: #182838;  /* Fondo profundo y tarjetas */
-      --color-azul-apoyo: #3389A3;   /* Detalles, bordes activos y escala */
+      --color-dorado: #B6812F;        /* Puntos en mapa, norte de brújula y acentos */
+      --color-azul-primario: #24415D; /* Paneles y botones base */
+      --color-azul-oscuro: #182838;   /* Fondo profundo y tarjetas */
+      --color-azul-apoyo: #3389A3;    /* Detalles, bordes activos y escala */
       --color-texto: #FFFFFF;
       --color-texto-suave: #D7E2EC;
       --font-titulo: "Montserrat", sans-serif;
@@ -142,7 +142,7 @@
       left: 12px;
       width: 320px;
       max-width: calc(100% - 24px);
-      max-height: calc(100% - 140px);
+      max-height: calc(100% - 145px);
       z-index: 25;
       display: none;
       flex-direction: column;
@@ -356,6 +356,36 @@
       );
     }
 
+    /* Brújula corporativa interactiva */
+    .compass-box {
+      position: absolute;
+      bottom: 16px;
+      right: 12px;
+      z-index: 20;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid rgba(51, 137, 163, 0.55);
+    }
+
+    .compass-box:hover {
+      border-color: var(--color-dorado);
+      background: rgba(24, 40, 56, 0.96);
+    }
+
+    .compass-dial {
+      width: 52px;
+      height: 52px;
+      transition: transform 0.12s linear;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     /* Ajustes específicos para móviles y tabletas */
     @media (max-width: 680px) {
       .topbar {
@@ -393,12 +423,12 @@
         left: 8px;
         right: 8px;
         width: auto;
-        max-height: calc(100% - 185px);
+        max-height: calc(100% - 190px);
       }
 
       .info-card {
         top: auto;
-        bottom: 64px;
+        bottom: 84px;
         left: 8px;
         right: 8px;
         width: auto;
@@ -406,13 +436,25 @@
       }
 
       .scale-bar-box {
-        bottom: 8px;
+        bottom: 10px;
         left: 8px;
         padding: 6px 10px;
       }
 
       .scale-bar {
         width: 90px;
+      }
+
+      .compass-box {
+        bottom: 10px;
+        right: 8px;
+        width: 56px;
+        height: 56px;
+      }
+
+      .compass-dial {
+        width: 46px;
+        height: 46px;
       }
     }
   </style>
@@ -424,8 +466,8 @@
   <div class="topbar">
     <div class="panel header-box">
       <!-- [INTERVENIR AQUÍ] Título y subtítulo del visor -->
-      <h1>Mina Los Filos</h1>
-      <p>Ortofoto de sitio y puntos de referencia</p>
+      <h1>Recorrido de Visitas</h1>
+      <p>Ortofotos de sitio y puntos de referencia</p>
     </div>
 
     <div class="panel controls-box">
@@ -469,12 +511,29 @@
     </div>
   </div>
 
+  <!-- Brújula corporativa (clic para orientar al Norte) -->
+  <button id="compassBtn" class="panel compass-box" title="Orientar al Norte" aria-label="Brújula, orientar al Norte">
+    <div id="compassDial" class="compass-dial">
+      <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true">
+        <circle cx="32" cy="32" r="28" fill="none" stroke="#3389A3" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.7" />
+        <text x="32" y="13" text-anchor="middle" fill="#B6812F" font-family="Montserrat, sans-serif" font-size="9" font-weight="700">N</text>
+        <!-- Aguja Norte (dorada) -->
+        <polygon points="32,15 37,32 32,29 27,32" fill="#B6812F" stroke="#FFFFFF" stroke-width="0.6" />
+        <!-- Aguja Sur (azul apoyo) -->
+        <polygon points="32,49 27,32 32,35 37,32" fill="#3389A3" stroke="#D7E2EC" stroke-width="0.6" />
+        <circle cx="32" cy="32" r="2.6" fill="#FFFFFF" stroke="#182838" stroke-width="1" />
+      </svg>
+    </div>
+  </button>
+
   <script>
     /* =====================================================================
-       [INTERVENIR AQUÍ] Credenciales y Asset ID de Cesium ion
+       [INTERVENIR AQUÍ] Token y Asset IDs de las dos ortofotos en Cesium ion
+       La ortofoto 2 se agrega después de la 1 para quedar por encima.
        ===================================================================== */
     const CESIUM_ION_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImJQV3Nnb3ZGcXd2TEEta00iLCJqdGkiOiJiNGMyMWUxYy1kZTE2LTQ5YTEtYWJkNi0wY2NjNzkzMjQxZTgiLCJpZCI6NDc3MzE0LCJzdWIiOiJqY2FzdHJvaiIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJUb2tlbiBGaWxvcyIsImlhdCI6MTc5MzAzNDMyOX0.WL5gFrYrmJZUr44ug0hF24-q7_IsbNK87RSc3J41A24";
-    const ORTHOPHOTO_ASSET_ID = 6134167; // Reemplaza 0 por el ID numérico de tu ortofoto en Cesium ion
+    const ORTHOPHOTO_1_ASSET_ID = 0; // Reemplaza 0 por el ID numérico de la ortofoto base/inferior
+    const ORTHOPHOTO_2_ASSET_ID = 6134167; // Reemplaza 0 por el ID numérico de la ortofoto superior
     const USE_WORLD_TERRAIN = true;
 
     /* =====================================================================
@@ -599,8 +658,20 @@
     const menuButtonsByIndex = [];
     let labelsVisible = true;
 
+    async function addOrthophotoIfConfigured(assetId) {
+      if (!assetId || assetId <= 0) return;
+      try {
+        const layer = await Cesium.ImageryLayer.fromProviderAsync(
+          Cesium.IonImageryProvider.fromAssetId(assetId)
+        );
+        viewer.imageryLayers.add(layer);
+      } catch (err) {
+        console.error(`Error al cargar el Asset ID ${assetId} desde Cesium ion:`, err);
+      }
+    }
+
     async function initViewer() {
-      if (USE_WORLD_TERRAIN && CESIUM_ION_TOKEN !== "PEGA_AQUI_TU_CESIUM_ION_TOKEN") {
+      if (USE_WORLD_TERRAIN) {
         try {
           viewer.terrainProvider = await Cesium.createWorldTerrainAsync();
         } catch (err) {
@@ -608,25 +679,18 @@
         }
       }
 
-      if (ORTHOPHOTO_ASSET_ID > 0 && CESIUM_ION_TOKEN !== "PEGA_AQUI_TU_CESIUM_ION_TOKEN") {
-        try {
-          const orthoLayer = await Cesium.ImageryLayer.fromProviderAsync(
-            Cesium.IonImageryProvider.fromAssetId(ORTHOPHOTO_ASSET_ID)
-          );
-          viewer.imageryLayers.add(orthoLayer);
-        } catch (err) {
-          console.error("Error al cargar la ortofoto desde Cesium ion:", err);
-        }
-      }
+      // Se cargan ambas ortofotos en orden (la 2 quedará encima de la 1)
+      await addOrthophotoIfConfigured(ORTHOPHOTO_1_ASSET_ID);
+      await addOrthophotoIfConfigured(ORTHOPHOTO_2_ASSET_ID);
 
       createAllPoiEntities();
       buildGroupedDrawerMenu();
       bindEvents();
       flyToInitialOverview();
       updateScaleBar();
+      updateCompassRotation();
     }
 
-    // Todos los marcadores se despliegan en el mapa desde el inicio con color dorado
     function createAllPoiEntities() {
       POIS.forEach((poi, idx) => {
         const entity = viewer.entities.add({
@@ -664,7 +728,6 @@
       });
     }
 
-    // Construye el menú agrupado dentro del cajón ocultable
     function buildGroupedDrawerMenu() {
       const drawerBody = document.getElementById("drawerBody");
       drawerBody.innerHTML = "";
@@ -716,6 +779,7 @@
     const cardGroup = document.getElementById("cardGroup");
     const cardDescription = document.getElementById("cardDescription");
     const cardCoords = document.getElementById("cardCoords");
+    const compassDial = document.getElementById("compassDial");
 
     function setDrawerOpen(isOpen) {
       drawerMenu.classList.toggle("open", isOpen);
@@ -765,7 +829,25 @@
       });
     }
 
-    // Escala gráfica dinámica basada en el ancho de la barra y la escala en el centro de pantalla
+    function orientCameraNorth() {
+      const pos = viewer.camera.positionCartographic;
+      if (!pos) return;
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromRadians(pos.longitude, pos.latitude, pos.height),
+        orientation: {
+          heading: 0,
+          pitch: viewer.camera.pitch,
+          roll: 0
+        },
+        duration: 0.7
+      });
+    }
+
+    function updateCompassRotation() {
+      const headingDeg = Cesium.Math.toDegrees(viewer.camera.heading || 0);
+      compassDial.style.transform = `rotate(${-headingDeg}deg)`;
+    }
+
     function updateScaleBar() {
       const scaleBar = document.getElementById("scaleBar");
       const scaleText = document.getElementById("scaleText");
@@ -810,6 +892,7 @@
       });
 
       document.getElementById("resetViewBtn").addEventListener("click", flyToInitialOverview);
+      document.getElementById("compassBtn").addEventListener("click", orientCameraNorth);
 
       const labelsBtn = document.getElementById("toggleLabelsBtn");
       labelsBtn.addEventListener("click", () => {
@@ -821,7 +904,10 @@
         });
       });
 
-      viewer.camera.changed.addEventListener(updateScaleBar);
+      viewer.camera.changed.addEventListener(() => {
+        updateScaleBar();
+        updateCompassRotation();
+      });
       window.addEventListener("resize", updateScaleBar);
 
       const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
